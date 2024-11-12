@@ -1,5 +1,22 @@
 const std = @import("std");
 
+
+const Color = enum {
+    red,
+    green,
+    blue,
+};
+
+const Token = union(enum) {
+    keyword_if,
+    keyword_switch: void,
+    digit: usize,
+
+    fn is(self: Token, tag: std.meta.Tag(Token)) bool {
+        return self == tag;
+    }
+};
+
 pub fn main() !void {
     var potato: u8 = undefined;
     std.debug.print("the potato variable:{}\n", .{potato}); // trash memory stuff
@@ -65,4 +82,13 @@ pub fn main() !void {
         },
         else => std.debug.print("None of the above\n", .{}),
     }
+
+    const fav_color: Color = .red;
+    std.debug.print("fav color is {s}", .{@tagName(fav_color)});
+    _ = switch (fav_color) {
+        .red => 1,
+        .green => 10,
+        else => 20
+    };
+
 }

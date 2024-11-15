@@ -1,24 +1,64 @@
 const std = @import("std");
 
+
+const LetterAmount = struct {
+    letter: u8,
+    amount: u8
+};
+
+
+const Node = struct {
+    value: LetterAmount,
+    left_node: ?*Node,
+    right_node: ?*Node,
+};
+
+
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    const input = "AAABBBCCDDEFFFFF";
+    const parsed_input = try parseInput(input);
+    defer parsed_input.deinit();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    std.debug.print("parsed input: {any}", .{parsed_input});
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush(); // don't forget to flush!
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+fn parseInput(input_string: []const u8) !std.ArrayList(LetterAmount){
+    const allocator = std.heap.page_allocator;
+
+    var letters = std.ArrayList(u8).init(allocator);
+    defer letters.deinit();
+    var amount = std.ArrayList(u8).init(allocator);
+    defer amount.deinit();
+
+
+    for (input_string) |input| {
+        var found = false;
+        for (letters.items, 0..) |letter, idx| {
+            if (letter == input) {
+                amount.items[idx] += 1;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            try letters.append(input);
+            try amount.append(1);
+        }
+    }
+
+    var letter_amount_pairs = std.ArrayList(LetterAmount).init(allocator);
+
+    for (letters.items, 0..) |letter, idx| {
+        try letter_amount_pairs.append( .{ .letter=letter, .amount=amount.items[idx] });
+    }
+
+    std.mem.sort(LetterAmount, letter_amount_pairs.items, {}, struct {
+        fn inner(_: void, a:LetterAmount, b:LetterAmount) bool {
+           return a.amount < b.amount;
+        }
+    }.inner);
+
+    return letter_amount_pairs;
 }

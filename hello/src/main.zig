@@ -91,4 +91,8 @@ pub fn main() !void {
         else => 20
     };
 
+    // pointers
+
+    const sl: []u8 = &[_]u8{};
+    std.debug.print("sl: {}", .{sl[0]});
 }

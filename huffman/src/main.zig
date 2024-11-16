@@ -26,32 +26,23 @@ pub fn main() !void {
 fn parseInput(input_string: []const u8) !std.ArrayList(LetterAmount){
     const allocator = std.heap.page_allocator;
 
-    var letters = std.ArrayList(u8).init(allocator);
-    defer letters.deinit();
-    var amount = std.ArrayList(u8).init(allocator);
-    defer amount.deinit();
-
+    var map = std.AutoHashMap(u8, u8).init(allocator);
+    defer map.deinit();
 
     for (input_string) |input| {
-        var found = false;
-        for (letters.items, 0..) |letter, idx| {
-            if (letter == input) {
-                amount.items[idx] += 1;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            try letters.append(input);
-            try amount.append(1);
+        const v = try map.getOrPut(input);
+        if (!v.found_existing) {
+            v.value_ptr.* = 1;
+        } else {
+            v.value_ptr.* = v.value_ptr.* + 1;
         }
     }
 
     var letter_amount_pairs = std.ArrayList(LetterAmount).init(allocator);
 
-    for (letters.items, 0..) |letter, idx| {
-        try letter_amount_pairs.append( .{ .letter=letter, .amount=amount.items[idx] });
+    var map_iterator = map.iterator();
+    while(map_iterator.next()) |entry|{
+        try letter_amount_pairs.append( .{ .letter=entry.key_ptr.*, .amount=entry.value_ptr.* });
     }
 
     std.mem.sort(LetterAmount, letter_amount_pairs.items, {}, struct {

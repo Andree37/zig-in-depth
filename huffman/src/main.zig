@@ -3,14 +3,25 @@ const std = @import("std");
 
 const LetterAmount = struct {
     letter: u8,
-    amount: u8
+    amount: usize
 };
 
 
 const Node = struct {
-    value: LetterAmount,
+    value: ?LetterAmount,
     left_node: ?*Node,
     right_node: ?*Node,
+
+    pub fn deinit(self: *Node, allocator: *const std.mem.Allocator) void {
+        if (self.left_node) |left| {
+            left.deinit(allocator);
+            allocator.*.destroy(left);
+        }
+        if (self.right_node) |right| {
+            right.deinit(allocator);
+            allocator.*.destroy(right);
+        }
+    }
 };
 
 
@@ -24,24 +35,55 @@ pub fn main() !void {
     const parsed_input = try parseInput(input, &allocator);
     defer parsed_input.deinit();
 
-    std.debug.print("parsed input: {any}", .{parsed_input});
+    std.debug.print("parsed input: {any}\n", .{parsed_input});
+
+    var huff_root = try mapInputIntroTree(parsed_input, &allocator);
+    defer {
+        huff_root.deinit(&allocator);
+        allocator.destroy(huff_root);
+    }
+
+
+    std.debug.print("huff root: {any}\n", .{huff_root});
 }
 
-fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !std.ArrayList(LetterAmount){
-    var map = std.AutoHashMap(u8, u8).init(allocator.*);
-    defer map.deinit();
+fn mapInputIntroTree(letter_amounts: std.ArrayList(LetterAmount), allocator: *const std.mem.Allocator) !*Node {
+    var root = try allocator.*.create(Node);
+    root.* = Node{ .left_node = null, .right_node = null, .value =null};
 
-    for (input_string) |input| {
-        const v = try map.getOrPut(input);
-        if (!v.found_existing) {
-            v.value_ptr.* = 1;
+    for (letter_amounts.items) |la| {
+        if (root.right_node == null) {
+            const new_node = try allocator.*.create(Node);
+            new_node.* = Node{.left_node = null, .right_node = null, .value = la};
+            root.right_node = new_node;
+        } else if (root.left_node == null) {
+            const new_node = try allocator.*.create(Node);
+            new_node.* = Node{.left_node = null, .right_node = null, .value = la};
+            root.left_node = new_node;
+        } else if (root.value == null) {
+            root.value = la;
         } else {
-            v.value_ptr.* = v.value_ptr.* + 1;
+            // create a new root and define this as the right child of that
+            const old_root = root;
+            root = try allocator.*.create(Node);
+            root.* = Node{.left_node = null, .right_node = old_root, .value = null};
         }
     }
 
-    var letter_amount_pairs = std.ArrayList(LetterAmount).init(allocator.*);
+    return root;
+}
 
+fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !std.ArrayList(LetterAmount){
+    var map = std.AutoHashMap(u8, usize).init(allocator.*);
+    defer map.deinit();
+
+    for (input_string) |input| {
+        var v = map.get(input) orelse 0;
+        v += 1;
+        try map.put(input, v);
+    }
+
+    var letter_amount_pairs = std.ArrayList(LetterAmount).init(allocator.*);
     var map_iterator = map.iterator();
     while(map_iterator.next()) |entry|{
         try letter_amount_pairs.append( .{ .letter=entry.key_ptr.*, .amount=entry.value_ptr.* });

@@ -15,18 +15,20 @@ const Node = struct {
 
 
 pub fn main() !void {
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(general_purpose_allocator.deinit() == .ok);
+
+    const allocator = general_purpose_allocator.allocator();
+
     const input = "AAABBBCCDDEFFFFF";
-    const parsed_input = try parseInput(input);
+    const parsed_input = try parseInput(input, &allocator);
     defer parsed_input.deinit();
 
     std.debug.print("parsed input: {any}", .{parsed_input});
-
 }
 
-fn parseInput(input_string: []const u8) !std.ArrayList(LetterAmount){
-    const allocator = std.heap.page_allocator;
-
-    var map = std.AutoHashMap(u8, u8).init(allocator);
+fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !std.ArrayList(LetterAmount){
+    var map = std.AutoHashMap(u8, u8).init(allocator.*);
     defer map.deinit();
 
     for (input_string) |input| {
@@ -38,7 +40,7 @@ fn parseInput(input_string: []const u8) !std.ArrayList(LetterAmount){
         }
     }
 
-    var letter_amount_pairs = std.ArrayList(LetterAmount).init(allocator);
+    var letter_amount_pairs = std.ArrayList(LetterAmount).init(allocator.*);
 
     var map_iterator = map.iterator();
     while(map_iterator.next()) |entry|{

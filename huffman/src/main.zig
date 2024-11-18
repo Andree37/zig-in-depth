@@ -1,4 +1,5 @@
 const std = @import("std");
+const pqueue = @import("pqueue.zig");
 
 
 const LetterAmount = struct {
@@ -35,43 +36,16 @@ pub fn main() !void {
     const parsed_input = try parseInput(input, &allocator);
     defer parsed_input.deinit();
 
-    std.debug.print("parsed input: {any}\n", .{parsed_input});
+    var queue = try pqueue.PriorityQueue.init(allocator);
+    defer queue.deinit();
 
-    var huff_root = try mapInputIntroTree(parsed_input, &allocator);
-    defer {
-        huff_root.deinit(&allocator);
-        allocator.destroy(huff_root);
-    }
+    try queue.push(1, 1);
+    try queue.push(1, 2);
 
-
-    std.debug.print("huff root: {any}\n", .{huff_root});
+    std.debug.print("here is the glorious queue: {any}\n", .{queue.data.items});
 }
 
-fn mapInputIntroTree(letter_amounts: std.ArrayList(LetterAmount), allocator: *const std.mem.Allocator) !*Node {
-    var root = try allocator.*.create(Node);
-    root.* = Node{ .left_node = null, .right_node = null, .value =null};
 
-    for (letter_amounts.items) |la| {
-        if (root.right_node == null) {
-            const new_node = try allocator.*.create(Node);
-            new_node.* = Node{.left_node = null, .right_node = null, .value = la};
-            root.right_node = new_node;
-        } else if (root.left_node == null) {
-            const new_node = try allocator.*.create(Node);
-            new_node.* = Node{.left_node = null, .right_node = null, .value = la};
-            root.left_node = new_node;
-        } else if (root.value == null) {
-            root.value = la;
-        } else {
-            // create a new root and define this as the right child of that
-            const old_root = root;
-            root = try allocator.*.create(Node);
-            root.* = Node{.left_node = null, .right_node = old_root, .value = null};
-        }
-    }
-
-    return root;
-}
 
 fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !std.ArrayList(LetterAmount){
     var map = std.AutoHashMap(u8, usize).init(allocator.*);

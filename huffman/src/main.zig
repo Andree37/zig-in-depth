@@ -43,6 +43,9 @@ pub fn main() !void {
     try queue.push(1, 2);
 
     std.debug.print("here is the glorious queue: {any}\n", .{queue.data.items});
+
+    const something = try queue.peek();
+    std.debug.print("Something: {}", .{something});
 }
 
 

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const QueueError = enum  {
+const QueueError = error  {
     EmptyQueue
 };
 
@@ -33,7 +33,7 @@ pub const PriorityQueue = struct{
 
     pub fn peek(self: *PriorityQueue) !u8 {
         if (self.isEmpty()) {
-            return .EmptyQueue;
+            return QueueError.EmptyQueue;
         }
 
         return self.data.items[0].item;
@@ -60,7 +60,7 @@ pub const PriorityQueue = struct{
 
     pub fn pop(self: *PriorityQueue) ?u8 {
         if (self.isEmpty()) {
-            return .EmptyQueue;
+            return QueueError.EmptyQueue;
         }
 
         const v = self.data.getLast();

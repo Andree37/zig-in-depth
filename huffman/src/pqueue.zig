@@ -5,8 +5,8 @@ const QueueError = error  {
 };
 
 const PriorityItem = struct {
-    priority: u8,
-    item: u8,
+    priority: usize,
+    letter: u8,
 };
 
 pub const PriorityQueue = struct{
@@ -36,12 +36,12 @@ pub const PriorityQueue = struct{
             return QueueError.EmptyQueue;
         }
 
-        return self.data.items[0].item;
+        return self.data.items[0].letter;
     }
 
-    pub fn push(self: *PriorityQueue, item: u8, priority: u8) !void {
+    pub fn push(self: *PriorityQueue, item: u8, priority: usize) !void {
         const new_pitem = try self.allocator.create(PriorityItem);
-        new_pitem.* = PriorityItem{.item = item, .priority = priority};
+        new_pitem.* = PriorityItem{.letter = item, .priority = priority};
 
         if (self.isEmpty()) {
             try self.data.append(new_pitem);

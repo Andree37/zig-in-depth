@@ -1,5 +1,6 @@
 const std = @import("std");
 const pqueue = @import("pqueue.zig");
+const hoff = @import("hoff.zig");
 
 
 pub fn main() !void {
@@ -13,6 +14,11 @@ pub fn main() !void {
     defer queue.deinit();
 
     std.debug.print("Priority queue: {any}\n", .{queue.data.items});
+
+    const root = hoff.Node.init(allocator,null,null);
+    defer root.deinit();
+
+    try root.buildHoff(queue);
 }
 
 fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !pqueue.PriorityQueue{
@@ -28,7 +34,10 @@ fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !pq
     var queue = try pqueue.PriorityQueue.init(allocator.*);
     var map_iterator = map.iterator();
     while(map_iterator.next()) |entry|{
-        try queue.push(entry.key_ptr.*, entry.value_ptr.*);
+        const new_pitem = try allocator.create(pqueue.PriorityItem);
+        new_pitem.* = pqueue.PriorityItem{.letter = entry.key_ptr.*, .priority = entry.value_ptr.*};
+
+        try queue.push(new_pitem);
     }
 
     return queue;

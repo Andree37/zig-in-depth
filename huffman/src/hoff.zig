@@ -8,14 +8,9 @@ pub const Node = struct {
     left_node: *Node,
     right_node: *Node,
 
-    pub fn init(allocator: std.mem.Allocator) !Node {
+    pub fn init(allocator: std.mem.Allocator, left_node: *Node, right_node: *Node) !Node {
         const node = try allocator.create(Node);
-
-        return node;
-    }
-
-    pub fn pushNodes(self: *Node, left_node: *Node, right_node: *Node) !*Node {
-        const pItem = try self.allocator.create(pqueue.PriorityItem);
+        const pItem = try allocator.create(pqueue.PriorityItem);
         pItem.* = pqueue.PriorityItem{.priority = left_node.*.pItem.priority + right_node.*.pItem.priority };
 
         node.* = Node{
@@ -25,6 +20,7 @@ pub const Node = struct {
             .right_node = right_node,
         };
 
+        return node;
     }
 
     pub fn deinit(self: *Node) !void {

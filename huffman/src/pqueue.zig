@@ -5,7 +5,7 @@ const QueueError = error  {
 };
 
 pub const PriorityItem = struct {
-    priority: usize,
+    priority: u32,
     letter: ?u8,
 };
 
@@ -55,7 +55,7 @@ pub const PriorityQueue = struct{
         try self.data.append(new_pitem);
     }
 
-    pub fn poll(self: *PriorityQueue) ?u8 {
+    pub fn poll(self: *PriorityQueue) !PriorityItem {
         if (self.isEmpty()) {
             return QueueError.EmptyQueue;
         }
@@ -64,6 +64,6 @@ pub const PriorityQueue = struct{
 
         self.data.shrinkRetainingCapacity(self.data.items.len-1);
 
-        return v.item;
+        return v.*;
     }
 };

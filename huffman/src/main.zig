@@ -15,14 +15,14 @@ pub fn main() !void {
 
     std.debug.print("Priority queue: {any}\n", .{queue.data.items});
 
-    const root = hoff.Node.init(allocator,null,null);
+    var root = try hoff.Node.init(allocator,null,null, null);
     defer root.deinit();
 
-    try root.buildHoff(queue);
+    try root.buildHoff(&queue);
 }
 
 fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !pqueue.PriorityQueue{
-    var map = std.AutoHashMap(u8, usize).init(allocator.*);
+    var map = std.AutoHashMap(u8, u32).init(allocator.*);
     defer map.deinit();
 
     for (input_string) |input| {

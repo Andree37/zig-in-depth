@@ -7,8 +7,8 @@ pub const Huffman = struct {
     allocator: std.mem.Allocator,
     root: *Node,
     original_text: String,
-    char_freqs: std.AutoHashMap([]u8, u8),
-    huffman_codes: std.AutoHashMap(u8, String),
+    char_freqs: std.StringArrayHashMap(u8),
+    huffman_codes: std.StringArrayHashMap(String),
 
     pub fn init(allocator: std.mem.Allocator, text: String) !Huffman {
         const root = try Node.init(allocator, 0, null, null, null);
@@ -17,8 +17,8 @@ pub const Huffman = struct {
             .allocator = allocator,
             .root = root,
             .original_text = text,
-            .char_freqs = std.AutoHashMap([]u8, u8).init(allocator),
-            .huffman_codes = std.AutoHashMap(u8, String).init(allocator),
+            .char_freqs = std.StringArrayHashMap(u8).init(allocator),
+            .huffman_codes = std.StringArrayHashMap(String).init(allocator),
         };
 
         try huff.fillCharFrequenciesMap();
@@ -26,11 +26,11 @@ pub const Huffman = struct {
         return huff.*;
     }
 
-    pub fn deinit(self: *Huffman) !void {
-        try self.char_freqs.deinit();
-        try self.generate_huff.deinit();
-        try self.root.deinit();
-        try self.original_text.deinit();
+    pub fn deinit(self: *Huffman) void {
+        self.char_freqs.deinit();
+        self.huffman_codes.deinit();
+        self.root.deinit();
+        self.original_text.deinit();
     }
 
     pub fn encode(self: *Huffman) !String {
@@ -39,30 +39,35 @@ pub const Huffman = struct {
 
         var char_freq_iterator = self.char_freqs.iterator();
         while(char_freq_iterator.next()) |entry| {
-            try queue.push(try Node.init(self.allocator, entry.value_ptr.*, entry.key_ptr.*, null, null));
+            const loose_key: []u8 = @constCast(entry.key_ptr.*);
+            try queue.push(try Node.init(self.allocator, entry.value_ptr.*, loose_key, null, null));
         }
 
-        while(!queue.size() > 1) {
+        while(queue.size() > 1) {
             const first_node = try queue.poll();
             const second_node = try queue.poll();
 
             const freq = first_node.payload.frequency + second_node.payload.frequency;
-            queue.push(try Node.init(self.allocator, freq, null, first_node, second_node));
+            try queue.push(try Node.init(self.allocator, freq, null, first_node, second_node));
         }
 
-        self.generateHuffmanCodes(queue.poll(), "");
+        var str = String.init(self.allocator);
+        defer str.deinit();
+
+        try self.generateHuffmanCodes(try queue.poll(), str);
         return self.getEncodedText();
     }
 
     pub fn decode(self: *Huffman, encoded_text: String) !String {
         var str = String.init(self.allocator);
-        var current: Node = self.root;
+        var current = self.root;
 
         var encoded_text_iterator = encoded_text.iterator();
         while (encoded_text_iterator.next()) |char| {
-            current = if (char == '0') current.left_node else current.right_node;
-            if (current.?.payload.letter != null) {
-                str.concat(current.?.payload.letter);
+            std.debug.print("current char: {any}\n", .{char});
+            current = if (std.mem.eql(u8, char, "0")) current.left_node.? else current.right_node.?;
+            if (current.payload.letter != null) {
+                try str.concat(current.payload.letter.?);
                 current = self.root;
             }
         }
@@ -73,34 +78,42 @@ pub const Huffman = struct {
     pub fn printCodes(self: *Huffman) void {
         var iterator = self.huffman_codes.iterator();
         while(iterator.next()) |entry| {
-            std.debug.print("{}:{}", .{entry.key_ptr.*, entry.value_ptr.*});
+            std.debug.print("{any}:{any}\n", .{entry.key_ptr.*, entry.value_ptr.*});
         }
     }
 
     fn fillCharFrequenciesMap(self: *Huffman) !void {
         var original_text_iterator = self.original_text.iterator();
         while (original_text_iterator.next()) |input| {
-            var v = self.char_freqs.get(input) orelse 0;
+            const in_loose: []u8 = @constCast(input);
+            var v = self.char_freqs.get(in_loose) orelse 0;
             v += 1;
-            try self.char_freqs.put(input, v);
+            try self.char_freqs.put(in_loose, v);
         }
     }
 
-    fn generateHuffmanCodes(self: *Huffman, root: Node, code: String) void{
+    fn generateHuffmanCodes(self: *Huffman, root: *Node, code: String) !void{
         if (root.payload.letter != null) {
-            self.huffman_codes.put(root.payload.letter, code);
+            try self.huffman_codes.put(root.payload.letter.?, code);
             return;
         }
+        var left_code = try code.clone();
+        try left_code.concat("0");
 
-        self.generateHuffmanCodes(root.left_node, try code.concat('0'));
-        self.generateHuffmanCodes(root.right_node, try code.concat('1'));
+        var right_code = try code.clone();
+        try right_code.concat("1");
+
+        try self.generateHuffmanCodes(root.left_node.?, left_code);
+        try self.generateHuffmanCodes(root.right_node.?, right_code);
     }
 
     fn getEncodedText(self: *Huffman) !String {
         var str = String.init(self.allocator);
-        const original_text_iterator = self.original_text.iterator();
+        var original_text_iterator = self.original_text.iterator();
         while (original_text_iterator.next()) |char| {
-            try str.concat(self.huffman_codes.get(char));
+            const char_loose: []u8 = @constCast(char);
+            const char_to_concat = self.huffman_codes.get(char_loose);
+            try str.concat(char_to_concat.?.str());
         }
 
         return str;

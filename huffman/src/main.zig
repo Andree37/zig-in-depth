@@ -8,17 +8,17 @@ pub fn main() !void {
 
     const allocator = general_purpose_allocator.allocator();
 
-    const input = try String.init_with_contents(allocator, "AAABBBCCDDEFFFFF");
+    var input = try String.init_with_contents(allocator, "AAABBBCCDDEFFFFF");
     defer input.deinit();
 
-    const huff = try Huffman.init(allocator, input);
+    var huff = try Huffman.init(allocator, input);
     defer huff.deinit();
 
-    const encoded_text = huff.encode();
-    std.debug.print("encoded text: {}", .{encoded_text});
+    const encoded_text = try huff.encode();
+    std.debug.print("encoded text: {any}\n", .{encoded_text});
 
     huff.printCodes();
 
     const original_text = try huff.decode(encoded_text);
-    std.debug.print("original text: {}", .{original_text});
+    std.debug.print("original text: {any}\n", .{original_text});
 }

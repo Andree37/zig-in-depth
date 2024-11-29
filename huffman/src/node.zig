@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub const Payload = struct {
     frequency: u8,
-    letter: ?u8,
+    letter: ?[]u8,
 };
 
 pub const Node = struct {
@@ -11,7 +11,7 @@ pub const Node = struct {
     left_node: ?*Node,
     right_node: ?*Node,
 
-    pub fn init(allocator: std.mem.Allocator, frequency: u8, letter: ?u8, left_node: ?*Node, right_node: ?*Node) !*Node {
+    pub fn init(allocator: std.mem.Allocator, frequency: u8, letter: ?[]u8, left_node: ?*Node, right_node: ?*Node) !*Node {
         const new_payload = try allocator.create(Payload);
         new_payload.* = Payload {
             .frequency = frequency,
@@ -29,19 +29,18 @@ pub const Node = struct {
         return new_node;
     }
 
-    pub fn deinit(self: *Node) !void {
-        self.allocator.destroy(self.payload);
+    pub fn deinit(self: *Node) void {
         if (self.left_node != null) {
-            try self.left_node.?.deinit();
+            self.left_node.?.deinit();
         }
         if (self.right_node != null) {
-            try self.right_node.?.deinit();
+            self.right_node.?.deinit();
         }
 
         self.allocator.destroy(self);
     }
 
-    pub fn build_node(allocator: std.mem.Allocator, left_node: *Node, right_node: *Node, letter: ?u8) !*Node {
+    pub fn build_node(allocator: std.mem.Allocator, left_node: *Node, right_node: *Node, letter: ?[]u8) !*Node {
         const freq = if (left_node != null and right_node != null) left_node.payload.frequency + right_node.payload.frequency else 0;
         return try init(allocator, freq, letter, left_node, right_node);
     }

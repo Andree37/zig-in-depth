@@ -61,6 +61,6 @@ pub const PriorityQueue = struct{
 
         self.data.shrinkRetainingCapacity(self.data.items.len-1);
 
-        return v.*;
+        return v;
     }
 };

@@ -1,34 +1,31 @@
 const std = @import("std");
+const Node = @import("node.zig").Node;
 
 const QueueError = error  {
     EmptyQueue
 };
 
-pub const PriorityItem = struct {
-    priority: u32,
-    letter: ?u8,
-};
-
 pub const PriorityQueue = struct{
-    data: std.ArrayList(*PriorityItem),
+    data: std.ArrayList(*Node),
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator) !PriorityQueue {
         return PriorityQueue{
-            .data= std.ArrayList(*PriorityItem).init(allocator),
+            .data= std.ArrayList(*Node).init(allocator),
             .allocator= allocator,
         };
     }
 
     pub fn deinit(self: *PriorityQueue) void {
-        for (self.data.items) |item| {
-            self.allocator.destroy(item);
-        }
         self.data.deinit();
     }
 
     pub fn isEmpty(self: *PriorityQueue) bool {
         return self.data.items.len == 0;
+    }
+
+    pub fn size(self: *PriorityQueue) usize {
+        return self.data.items.len;
     }
 
     pub fn peek(self: *PriorityQueue) !u8 {
@@ -39,23 +36,23 @@ pub const PriorityQueue = struct{
         return self.data.items[0].letter;
     }
 
-    pub fn push(self: *PriorityQueue, new_pitem: *PriorityItem) !void {
+    pub fn push(self: *PriorityQueue, new_node: *Node) !void {
         if (self.isEmpty()) {
-            try self.data.append(new_pitem);
+            try self.data.append(new_node);
             return;
         }
 
         for (self.data.items, 0..) |pitem, idx| {
-            if (new_pitem.priority <= pitem.priority) {
-                try self.data.insert(idx, new_pitem);
+            if (new_node.payload.frequency <= pitem.payload.frequency) {
+                try self.data.insert(idx, new_node);
                 return;
             }
         }
 
-        try self.data.append(new_pitem);
+        try self.data.append(new_node);
     }
 
-    pub fn poll(self: *PriorityQueue) !PriorityItem {
+    pub fn poll(self: *PriorityQueue) !*Node {
         if (self.isEmpty()) {
             return QueueError.EmptyQueue;
         }

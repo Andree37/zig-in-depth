@@ -26,7 +26,7 @@ pub const Node = struct {
             .right_node = right_node,
         };
 
-        return new_node.*;
+        return new_node;
     }
 
     pub fn deinit(self: *Node) !void {
@@ -44,9 +44,5 @@ pub const Node = struct {
     pub fn build_node(allocator: std.mem.Allocator, left_node: *Node, right_node: *Node, letter: ?u8) !*Node {
         const freq = if (left_node != null and right_node != null) left_node.payload.frequency + right_node.payload.frequency else 0;
         return try init(allocator, freq, letter, left_node, right_node);
-    }
-
-    pub fn compareTo(self: *Node, other: Node) bool {
-        return self.frequency < other.frequency;
     }
 };

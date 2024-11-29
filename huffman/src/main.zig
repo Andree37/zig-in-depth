@@ -1,7 +1,6 @@
 const std = @import("std");
-const pqueue = @import("pqueue.zig");
-const hoff = @import("hoff.zig");
-
+const String = @import("string").String;
+const Huffman = @import("huff.zig").Huffman;
 
 pub fn main() !void {
     var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
@@ -9,36 +8,17 @@ pub fn main() !void {
 
     const allocator = general_purpose_allocator.allocator();
 
-    const input = "AAABBBCCDDEFFFFF";
-    var queue = try parseInput(input, &allocator);
-    defer queue.deinit();
+    const input = try String.init_with_contents(allocator, "AAABBBCCDDEFFFFF");
+    defer input.deinit();
 
-    std.debug.print("Priority queue: {any}\n", .{queue.data.items});
+    const huff = try Huffman.init(allocator, input);
+    defer huff.deinit();
 
-    var root = try hoff.Node.init(allocator,null,null, null);
-    defer root.deinit();
+    const encoded_text = huff.encode();
+    std.debug.print("encoded text: {}", .{encoded_text});
 
-    try root.buildHoff(&queue);
-}
+    huff.printCodes();
 
-fn parseInput(input_string: []const u8, allocator: *const std.mem.Allocator) !pqueue.PriorityQueue{
-    var map = std.AutoHashMap(u8, u32).init(allocator.*);
-    defer map.deinit();
-
-    for (input_string) |input| {
-        var v = map.get(input) orelse 0;
-        v += 1;
-        try map.put(input, v);
-    }
-
-    var queue = try pqueue.PriorityQueue.init(allocator.*);
-    var map_iterator = map.iterator();
-    while(map_iterator.next()) |entry|{
-        const new_pitem = try allocator.create(pqueue.PriorityItem);
-        new_pitem.* = pqueue.PriorityItem{.letter = entry.key_ptr.*, .priority = entry.value_ptr.*};
-
-        try queue.push(new_pitem);
-    }
-
-    return queue;
+    const original_text = try huff.decode(encoded_text);
+    std.debug.print("original text: {}", .{original_text});
 }
